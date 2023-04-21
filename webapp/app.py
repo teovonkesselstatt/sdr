@@ -2,7 +2,7 @@ from webapp import weights, references
 import streamlit as st
 
 def run_app():
-    st.title('Real Exchange Rate')
+    st.title('Emerging SDRs')
     PAGES = {
             "Weights": weights,
             "References": references
