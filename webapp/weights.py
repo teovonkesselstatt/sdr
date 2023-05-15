@@ -94,6 +94,9 @@ def run_app():
 
     ######################## WEIGHTS ##########################################
 
+    ano = st.slider('##### Select initial year', min_value=2000, max_value=2020, value=2000, step=5)
+    ano = datetime(ano,1,1)
+
     weights = {currency: 0 for currency in wide_df.columns}
 
     display_currencies = ['Brazilian real','Indian rupee','Mexican peso',
@@ -107,7 +110,7 @@ def run_app():
 
     for currency in weights:
         # Encuentro la cantidad de monedas que tienen que componer a la canasta para que el weight del valor sea el elegido
-        cantidad[currency] = weights[currency] * wide_df[(wide_df.index == nro_plan)][currency][0] / wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
+        cantidad[currency] = weights[currency] * wide_df[(wide_df.index == ano)][currency][0] / wide_df[(wide_df.index == ano)]['Special drawing right'][0]
 
     # Columna del valor del Emerging SDR
 
@@ -166,3 +169,6 @@ def run_app():
     df_gdp_country.plot('Time','Real GDP',secondary_y=True, ax=ax1)
 
     st.pyplot(fig1)
+
+    st.write('Correlation with EMR' , df_gdp_country[["Real GDP","IMF Payment EMR"]].corr()['Real GDP'][1])
+    st.write('Correlation with SDR' , df_gdp_country[["Real GDP","IMF Payment SDR"]].corr()['Real GDP'][1])
