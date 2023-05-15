@@ -63,17 +63,8 @@ def run_app():
 
     weights = {currency: 0 for currency in wide_df.columns}
 
-    weights['Indian rupee'] = st.slider('##### Indian rupee', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['Russian rouble'] = st.slider('##### Russian rouble', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['Renminbi'] = st.slider('##### Renminbi', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['South African Rand'] = st.slider('##### South African Rand', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['Brazilian real'] = st.slider('##### Brazilian Real', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Rupiah'] = st.slider('##### Indonesian Rupiah', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Mexican peso'] = st.slider('##### Mexican peso', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Saudi riyal'] = st.slider('##### Saudi riyal', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Turkish lira'] = st.slider('##### Turkish lira', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['US dollar'] = st.slider('##### US dollar', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Special drawing right'] = st.slider('##### SDR', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+    for currency in wide_df.columns:
+        weights[currency] = st.slider('#####' + currency, min_value=0.0, max_value=1.0, value=0, step=0.01)
 
     # Columna del valor del Emerging SDR
 
