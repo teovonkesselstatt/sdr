@@ -9,85 +9,37 @@ import datetime
 
 def run_app():
 
-    # Read the CSV file into a pandas dataframe
-    df_neer = pd.read_csv('data/NEER_m.csv', header=0)
-    df_neer.drop(['FREQ','Frequency','COLLECTION','Collection','UNIT_MULT',
+    ###################### CSV de Nominal Exchange Rate #######################
+
+    df_daily = pd.read_csv('data/NEER_d.csv', header=0)
+
+    df_daily.drop(['FREQ','Frequency','COLLECTION','Collection','UNIT_MULT',
                 'Unit Multiplier','DECIMALS', 'Decimals', 'Availability',
                 'AVAILABILITY', 'TITLE', 'Series'], axis=1, inplace=True)
 
-    # Wide to long
-    df_neer = pd.melt(df_neer, id_vars = ['Reference area','REF_AREA','CURRENCY','Currency'], value_vars=df_neer.columns[4:], var_name='Time', value_name='XR')
-    df_neer['Time'] = pd.to_datetime(df_neer['Time'], format='%Y-%m')
-    df_neer['Time'] = df_neer['Time'].dt.to_period('M').dt.to_timestamp(how='end')
-    df_neer['Time'] = df_neer.Time.dt.date
+    df_daily = pd.melt(df_daily, id_vars = ['Reference area','REF_AREA','CURRENCY','Currency'], value_vars=df_daily.columns[18000:], var_name='Time', value_name='XR')
+    df_daily['Time'] = pd.to_datetime(df_daily['Time'], format='%Y-%m-%d')
 
-    # Long to wide
-    wide_df = df_neer.pivot_table(index='Time', columns='Currency', values='XR')
+    # Creo el wide dataframe con las monedas
+    wide_df = df_daily.pivot_table(index='Time', columns='Currency', values='XR')
 
-    ### Abro el df de los planes del FMI
-    df_plans = pd.read_csv('data/IMF.csv', header=0)
-    df_plans['Date of Arrangement'] = pd.to_datetime(df_plans['Date of Arrangement'], format='%Y-%m-%d')
-    df_plans['Date of Arrangement'] = df_plans['Date of Arrangement'].dt.date
-    df_plans['Expiration Date'] = pd.to_datetime(df_plans['Expiration Date'], format='%Y-%m-%d')
-    df_plans['Expiration Date'] = df_plans['Expiration Date'].dt.date
+    # Me quedo con las monedas que me interesan
+    wide_df = wide_df[['Brazilian real', 'Chilean peso','Euro','Hong Kong dollar',
+                    'Indian rupee','Mexican peso','Pound (sterling)','Renminbi',
+                    'Rupiah','Russian rouble','Saudi riyal','Singapore dollar',
+                    'South African Rand','Special drawing right',
+                        'Turkish lira','US dollar','Yen']]
 
-    # Me quedo con los planes post 2000, pero que terminan pre 2023
-    dia1 = datetime.date(2000,1,31)
-    dia2 = datetime.date(2023,2,28)
-    df_plans = df_plans[(df_plans['Date of Arrangement'] >= dia1) & (df_plans['Expiration Date'] <= dia2)]
-
-    # Change variable types
-    df_plans['Amount Agreed'] = pd.to_numeric(df_plans['Amount Agreed'])
-    df_plans['Amount Drawn'] = pd.to_numeric(df_plans['Amount Drawn'])
-
-    # Creo las variables que te dicen el ultimo día del mes anterior
-    df_plans['Arrangement-1'] = df_plans['Date of Arrangement'] + pd.DateOffset(months = -1)
-    df_plans['Arrangement-1'] = df_plans['Arrangement-1'].dt.to_period('M').dt.to_timestamp(how='end')
-    df_plans['Arrangement-1'] = df_plans['Arrangement-1'].dt.date
-
-    df_plans['Expiration-1'] = df_plans['Expiration Date'] + pd.DateOffset(months = -1)
-    df_plans['Expiration-1'] = df_plans['Expiration-1'].dt.to_period('M').dt.to_timestamp(how='end')
-    df_plans['Expiration-1'] = df_plans['Expiration-1'].dt.date
-
-    ## Columna value en USD al principio
-    def calculate_amount_usd(row):
-        start_date = row['Arrangement-1']
-        price_at_start_date = wide_df[((wide_df.index == start_date))]['Special drawing right'].values[0]
-        amount = row['Amount Agreed']
-        amount_usd = amount / price_at_start_date
-        return amount_usd
-
-    df_plans['Start USD'] = df_plans.apply(calculate_amount_usd, axis=1)
-
-    ## Column of value in USD at end
-    def calculate_amount2_usd(row):
-        end_date = row['Expiration-1']
-        price_at_end_date = wide_df[((wide_df.index == end_date))]['Special drawing right'].values[0]
-        amount = row['Amount Agreed']
-        amount_usd = amount / price_at_end_date
-        return amount_usd
-
-    df_plans['End USD'] = df_plans.apply(calculate_amount2_usd, axis=1)
-
-    # Columna de retorno del SDR
-    df_plans['Return SDR'] = df_plans['End USD'] / df_plans['Start USD']
+    # Elimino las primeras dos filas, que tienen algunos NAs
+    wide_df = wide_df.iloc[2:]
+    wide_df = wide_df.interpolate()
 
     ############################ WEIGHTS ######################################
 
     weights = {currency: 0 for currency in wide_df.columns}
 
-    weights['Indian rupee'] = st.slider('##### Indian rupee', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['Russian rouble'] = st.slider('##### Russian rouble', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['Renminbi'] = st.slider('##### Renminbi', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['South African Rand'] = st.slider('##### South African Rand', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['Egyptian pound'] = st.slider('##### Egyptian pound', min_value=0.0, max_value=1.0, value=0.2, step=0.01)
-    weights['Brazilian real'] = st.slider('##### Brazilian Real', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Rupiah'] = st.slider('##### Indonesian Rupiah', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Mexican peso'] = st.slider('##### Mexican peso', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Saudi riyal'] = st.slider('##### Saudi riyal', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Turkish lira'] = st.slider('##### Turkish lira', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['US dollar'] = st.slider('##### US dollar', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-    weights['Special drawing right'] = st.slider('##### SDR', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+    for currency in wide_df.columns:
+        weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
 
     # Columna del valor del Emerging SDR
@@ -100,28 +52,106 @@ def run_app():
 
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
 
-    # Columna value EMERGING en USD al principio
-    def calculate_emerging_usd(row):
-        start_date = row['Arrangement-1']
-        price_at_start_date = wide_df[((wide_df.index == start_date))]['Emerging SDR'].values[0]
-        amount = row['Amount Agreed']
-        amount_usd = amount / price_at_start_date
-        return amount_usd
+    ######################### CSV de Flows ####################################
+    df_flows = pd.read_csv('data/FLOWS.csv', header=9)
 
-    df_plans['Start EMERGING USD'] = df_plans.apply(calculate_emerging_usd, axis=1)
+    # Me quedo solo con EFF y SBA
+    df_flows = df_flows[(df_flows['Description'] == 'Extended Fund Facility') | (df_flows['Description'] == 'Stand-By Arrangement')]
+    df_flows = df_flows[(df_flows['Original Arrangement Date'] != 'n.a.')] # Los que elimina son pre 2000 asi que todo bien
 
-    # Columna value EMERGING en USD al final
-    def calculate_emerging2_usd(row):
-        end_date = row['Expiration-1']
-        price_at_end_date = wide_df[((wide_df.index == end_date))]['Emerging SDR'].values[0]
-        amount = row['Amount Agreed']
-        amount_usd = amount / price_at_end_date
-        return amount_usd
+    # Paso a los tipos de data que necesito
+    df_flows['Transaction Value Date'] = pd.to_datetime(df_flows['Transaction Value Date'], format='%m/%d/%Y')
+    df_flows['Original Disbursement Date'] = pd.to_datetime(df_flows['Original Disbursement Date'], format='%m/%d/%Y')
+    df_flows['Original Arrangement Date'] = pd.to_datetime(df_flows['Original Arrangement Date'], format='%m/%d/%Y')
+    df_flows['Amount'] = pd.to_numeric(df_flows['Amount'])
 
-    df_plans['End EMERGING USD'] = df_plans.apply(calculate_emerging2_usd, axis=1)
+    # Me quedo con los planes siglo XXI
+    dia1 = datetime.date(2000,1,1)
+    df_flows = df_flows[(df_flows['Original Arrangement Date'].dt.date >= dia1)]
 
-    # Columna de retorno del SDR
-    df_plans['Return EMERGING SDR'] = df_plans['End EMERGING USD'] / df_plans['Start EMERGING USD']
+    ######################### CSV de GDP ######################################
 
-    df_display = df_plans[['Country','Facility','Date of Arrangement', 'Expiration Date', 'Return EMERGING SDR','Return SDR']]
-    st.dataframe(df_display)
+    df_gdp = pd.read_csv('data/GDPreal.csv', header=6, na_values='...')
+    df_gdp = df_gdp.drop('Unnamed: 0', axis=1)
+    df_gdp = pd.melt(df_gdp, id_vars = ['Country'], value_vars=df_gdp.columns[3:], var_name='Time', value_name='Real GDP')
+    df_gdp['Real GDP'] = df_gdp['Real GDP'].str.replace(',','').apply(pd.to_numeric)
+    df_gdp['Time'] = df_gdp['Time'].str.replace(r'(\d{4})Q', r'\1-Q')
+    df_gdp['Time'] = pd.PeriodIndex(df_gdp['Time'], freq='Q').to_timestamp(how = 'end')
+    df_gdp['Time'] = df_gdp['Time'].dt.date
+
+
+
+
+
+    # Limito a un solo plan
+    country = st.selectbox(
+        'Select a country',
+        df_flows['Member'].unique())
+
+
+    # Veo caso de un país
+    df_country = df_flows[(df_flows['Member'] == country)].sort_values('Transaction Value Date')
+
+    # Lista de planes del país
+    planes_country = df_country['Original Arrangement Date'].unique()
+
+    nro_plan = st.selectbox(
+        'Select a plan',
+        planes_country)
+
+
+    # Me limito solo al plan elegido
+    plan = df_country[(df_country['Original Arrangement Date'] == nro_plan)]
+
+    # Lo pongo en terminos de deuda (postivo es que le debo al FMI)
+    plan.loc[plan['Flow Type'] == 'GRA Repurchases', 'Amount'] = -1 * plan['Amount']
+
+    plan.loc[:,'Debt'] = plan.Amount.cumsum()
+
+    # Column of value in USD for SDR and Emerging SDR
+
+    def calculate_amount_currency(row,currency):
+        end_date = row['Transaction Value Date']
+        price_at_date = wide_df[((wide_df.index == end_date))][currency].values[0]
+        amount = row['Amount'] * (-1)
+        amount = amount / price_at_date
+        return amount
+
+
+    plan.loc[:,'Amount SDR'] = plan.apply(calculate_amount_currency, currency='Special drawing right', axis=1)
+    plan.loc[:,'Amount EMR'] = plan.apply(calculate_amount_currency, currency='Emerging SDR', axis=1)
+
+    # Me limito a un solo pais, un solo plan
+    df_gdp_country = df_gdp[df_gdp['Country'] == country]
+
+    # Calcula la suma de pagos de capital en cada trimestre
+    def calculate_imf_sdr(row, currency):
+        date = row['Time']
+        amount = plan.loc[(plan['Transaction Value Date'].dt.date <= date ) &
+            (plan['Transaction Value Date'].dt.date > date - pd.DateOffset(months = 3)) &
+            (plan['Flow Type'] == 'GRA Repurchases'),
+            currency].sum()
+        return amount
+
+    df_gdp_country['IMF Payment SDR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount SDR', axis=1)
+    df_gdp_country['IMF Payment EMR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount EMR', axis=1)
+
+    # Guardo el valor que SDR y EMR tenian cuando se acordo el plan
+    sdr = wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
+    emr = wide_df[(wide_df.index == nro_plan)]['Emerging SDR'][0]
+
+    # Ajusto los valores de los pagos como para que el monto en dolares arranque siendo igual
+    df_gdp_country['IMF Payment EMR'] = df_gdp_country['IMF Payment EMR'] / sdr * emr
+
+    # Grafico
+    fig1, ax1 = plt.subplots(figsize=(12, 4))
+
+    df_gdp_country.plot(x = "Time", \
+            y = ["IMF Payment SDR","IMF Payment EMR"], \
+                style=['-','-'], \
+                    color=['r','b'],\
+                        ax = ax1)
+
+    df_gdp_country.plot('Time','Real GDP',secondary_y=True, ax=ax1)
+
+    st.pyplot(fig1)
