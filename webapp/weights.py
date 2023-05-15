@@ -96,7 +96,11 @@ def run_app():
 
     weights = {currency: 0 for currency in wide_df.columns}
 
-    for currency in wide_df.columns:
+    display_currencies = ['Brazilian real','Indian rupee','Mexican peso',
+                'Rupiah','Russian rouble','Saudi riyal','South African Rand',
+                'Special drawing right','Turkish lira']
+
+    for currency in display_currencies:
         weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
     cantidad = {currency: 0 for currency in wide_df.columns}
