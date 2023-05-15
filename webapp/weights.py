@@ -105,8 +105,8 @@ def run_app():
     def calculate_emerging(row):
         sum = 0
         for curr in weights:
-            if not np.isnan(row[curr]): sum = sum + row[curr]*weights[curr]
-        return sum
+            if not np.isnan(row[curr]): sum = sum + cantidad[curr]/row[curr]
+        return 1/sum
 
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
 
