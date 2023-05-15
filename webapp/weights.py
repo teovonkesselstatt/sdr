@@ -95,7 +95,7 @@ def run_app():
     ######################## WEIGHTS ##########################################
 
     ano = st.slider('##### Select initial year', min_value=2000, max_value=2020, value=2000, step=5)
-    ano = datetime(ano,1,1)
+    ano = datetime.datetime(ano,1,1)
 
     weights = {currency: 0 for currency in wide_df.columns}
 
