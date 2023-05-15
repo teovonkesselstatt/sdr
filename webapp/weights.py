@@ -87,6 +87,7 @@ def run_app():
     weights['Saudi riyal'] = st.slider('##### Saudi riyal', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
     weights['Turkish lira'] = st.slider('##### Turkish lira', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
     weights['US dollar'] = st.slider('##### US dollar', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+    weights['Special drawing right'] = st.slider('##### SDR', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
 
     # Columna del valor del Emerging SDR
