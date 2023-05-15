@@ -55,7 +55,7 @@ def run_app():
                     'South African Rand','Special drawing right',
                         'Turkish lira','US dollar','Yen']]
 
-
+    # Elimino las primeras dos filas, que tienen algunos NAs
     wide_df = wide_df.iloc[2:]
     wide_df = wide_df.interpolate()
 
@@ -77,8 +77,10 @@ def run_app():
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
 
     # Limito a un solo plan
-    country = 'Argentina'
-    nro_plan = 3
+    option = st.sidebar.selectbox(
+        'Select a country',
+        df_flows['Member'].unique())
+
 
     # Veo caso de un país
     df_country = df_flows[(df_flows['Member'] == country)].sort_values('Transaction Value Date')
@@ -86,8 +88,13 @@ def run_app():
     # Lista de planes del país
     planes_country = df_country['Original Arrangement Date'].unique()
 
-    # Me limito solo al primer plan
-    plan = df_country[(df_country['Original Arrangement Date'] == planes_country[nro_plan])]
+    nro_plan = st.sidebar.selectbox(
+        'Select a plan',
+        planes_country)
+
+
+    # Me limito solo al plan elegido
+    plan = df_country[(df_country['Original Arrangement Date'] == nro_plan)]
 
     # Lo pongo en terminos de deuda (postivo es que le debo al FMI)
     plan.loc[plan['Flow Type'] == 'GRA Repurchases', 'Amount'] = -1 * plan['Amount']
