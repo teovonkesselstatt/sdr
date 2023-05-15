@@ -140,11 +140,11 @@ def run_app():
     df_gdp_country.loc[:,'IMF Payment EMR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount EMR', axis=1)
 
     # Guardo el valor que SDR y EMR tenian cuando se acordo el plan
-    sdr = wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
-    emr = wide_df[(wide_df.index == nro_plan)]['Emerging SDR'][0]
+    #sdr = wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
+    #emr = wide_df[(wide_df.index == nro_plan)]['Emerging SDR'][0]
 
     # Ajusto los valores de los pagos como para que el monto en dolares arranque siendo igual
-    df_gdp_country['IMF Payment EMR'] = df_gdp_country['IMF Payment EMR'] / sdr * emr
+    #df_gdp_country['IMF Payment EMR'] = df_gdp_country['IMF Payment EMR'] / sdr * emr
 
     # Grafico
     fig1, ax1 = plt.subplots(figsize=(12, 4))
