@@ -9,33 +9,8 @@ import datetime
 
 def run_app():
 
-    # CSV de Flows
-    df_flows = pd.read_csv('data/FLOWS.csv', header=9)
+    ###################### CSV de Nominal Exchange Rate #######################
 
-    # Me quedo solo con EFF y SBA
-    df_flows = df_flows[(df_flows['Description'] == 'Extended Fund Facility') | (df_flows['Description'] == 'Stand-By Arrangement')]
-    df_flows = df_flows[(df_flows['Original Arrangement Date'] != 'n.a.')] # Los que elimina son pre 2000 asi que todo bien
-
-    # Paso a los tipos de data que necesito
-    df_flows['Transaction Value Date'] = pd.to_datetime(df_flows['Transaction Value Date'], format='%m/%d/%Y')
-    df_flows['Original Disbursement Date'] = pd.to_datetime(df_flows['Original Disbursement Date'], format='%m/%d/%Y')
-    df_flows['Original Arrangement Date'] = pd.to_datetime(df_flows['Original Arrangement Date'], format='%m/%d/%Y')
-    df_flows['Amount'] = pd.to_numeric(df_flows['Amount'])
-
-    # Me quedo con los planes siglo XXI
-    dia1 = datetime.date(2000,1,1)
-    df_flows = df_flows[(df_flows['Original Arrangement Date'].dt.date >= dia1)]
-
-    # CSV de GDP
-    df_gdp = pd.read_csv('data/GDPreal.csv', header=6, na_values='...')
-    df_gdp = df_gdp.drop('Unnamed: 0', axis=1)
-    df_gdp = pd.melt(df_gdp, id_vars = ['Country'], value_vars=df_gdp.columns[3:], var_name='Time', value_name='Real GDP')
-    df_gdp['Real GDP'] = df_gdp['Real GDP'].str.replace(',','').apply(pd.to_numeric)
-    df_gdp['Time'] = df_gdp['Time'].str.replace(r'(\d{4})Q', r'\1-Q')
-    df_gdp['Time'] = pd.PeriodIndex(df_gdp['Time'], freq='Q').to_timestamp(how = 'end')
-    df_gdp['Time'] = df_gdp['Time'].dt.date
-
-    # CSV de Nominal Exchange Rate
     df_daily = pd.read_csv('data/NEER_d.csv', header=0)
 
     df_daily.drop(['FREQ','Frequency','COLLECTION','Collection','UNIT_MULT',
@@ -76,6 +51,37 @@ def run_app():
         return sum
 
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
+
+    ######################### CSV de Flows ####################################
+    df_flows = pd.read_csv('data/FLOWS.csv', header=9)
+
+    # Me quedo solo con EFF y SBA
+    df_flows = df_flows[(df_flows['Description'] == 'Extended Fund Facility') | (df_flows['Description'] == 'Stand-By Arrangement')]
+    df_flows = df_flows[(df_flows['Original Arrangement Date'] != 'n.a.')] # Los que elimina son pre 2000 asi que todo bien
+
+    # Paso a los tipos de data que necesito
+    df_flows['Transaction Value Date'] = pd.to_datetime(df_flows['Transaction Value Date'], format='%m/%d/%Y')
+    df_flows['Original Disbursement Date'] = pd.to_datetime(df_flows['Original Disbursement Date'], format='%m/%d/%Y')
+    df_flows['Original Arrangement Date'] = pd.to_datetime(df_flows['Original Arrangement Date'], format='%m/%d/%Y')
+    df_flows['Amount'] = pd.to_numeric(df_flows['Amount'])
+
+    # Me quedo con los planes siglo XXI
+    dia1 = datetime.date(2000,1,1)
+    df_flows = df_flows[(df_flows['Original Arrangement Date'].dt.date >= dia1)]
+
+    ######################### CSV de GDP ######################################
+
+    df_gdp = pd.read_csv('data/GDPreal.csv', header=6, na_values='...')
+    df_gdp = df_gdp.drop('Unnamed: 0', axis=1)
+    df_gdp = pd.melt(df_gdp, id_vars = ['Country'], value_vars=df_gdp.columns[3:], var_name='Time', value_name='Real GDP')
+    df_gdp['Real GDP'] = df_gdp['Real GDP'].str.replace(',','').apply(pd.to_numeric)
+    df_gdp['Time'] = df_gdp['Time'].str.replace(r'(\d{4})Q', r'\1-Q')
+    df_gdp['Time'] = pd.PeriodIndex(df_gdp['Time'], freq='Q').to_timestamp(how = 'end')
+    df_gdp['Time'] = df_gdp['Time'].dt.date
+
+
+
+
 
     # Limito a un solo plan
     country = st.sidebar.selectbox(
@@ -137,7 +143,7 @@ def run_app():
     # Ajusto los valores de los pagos como para que el monto en dolares arranque siendo igual
     df_gdp_country['IMF Payment EMR'] = df_gdp_country['IMF Payment EMR'] / sdr * emr
 
-
+    # Grafico
     fig1, ax1 = plt.subplots(figsize=(12, 4))
 
     df_gdp_country.plot(x = "Time", \
