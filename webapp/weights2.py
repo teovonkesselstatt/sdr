@@ -63,11 +63,9 @@ def run_app():
 
     weights = {currency: 0 for currency in wide_df.columns}
 
-    for currency in wide_df.columns:
-        weights[currency] = st.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-
     if st.button('Reset Values'):
-        weights[currency] = st.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+        for currency in wide_df.columns:
+            weights[currency] = st.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
 
     # Columna del valor del Emerging SDR
