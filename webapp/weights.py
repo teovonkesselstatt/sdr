@@ -91,25 +91,25 @@ def run_app():
     ######################## WEIGHTS ##########################################
 
     weights = {currency: 0 for currency in wide_df.columns}
-    cantidad = {currency: 0 for currency in wide_df.columns}
 
     for currency in wide_df.columns:
         weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
-    for currency in wide_df.columns:
-        cantidad[currency] = weights[currency] * wide_df[(wide_df.index == nro_plan)][currency] / wide_df[(wide_df.index == nro_plan)]['Special drawing right']
+    cantidad = {currency: 0 for currency in wide_df.columns}
 
+    for currency in weights:
+        # Encuentro la cantidad de monedas que tienen que componer a la canasta para que el weight del valor sea el elegido
+        cantidad[currency] = weights[currency] * wide_df[(wide_df.index == nro_plan)][currency][0] / wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
 
     # Columna del valor del Emerging SDR
 
     def calculate_emerging(row):
         sum = 0
-        for curr in weights:
-            if not np.isnan(row[curr]): sum = sum + cantidad[curr]/row[curr]
+        for curr in cantidad:
+            sum = sum + cantidad[curr]/row[curr]
         return 1/sum
 
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
-
 
     # Column of value in USD for SDR and Emerging SDR
 
