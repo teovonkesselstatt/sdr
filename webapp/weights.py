@@ -63,10 +63,14 @@ def run_app():
 
 ###############################################################################
 
+    a, b = df_flows.Member.unique(), df_gdp.Country.unique()
+
+    intersection = [x for x in a if x in b]
+
     # Limito a un solo plan
     country = st.selectbox(
         'Select a country',
-        df_flows['Member'].unique())
+        intersection)
 
 
     # Veo caso de un país
