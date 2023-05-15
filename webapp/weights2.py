@@ -149,4 +149,4 @@ def run_app():
 
     df_gdp_country.plot('Time','Real GDP',secondary_y=True, ax=ax1)
 
-    st.pyplot(fig)
+    st.pyplot(fig1)
