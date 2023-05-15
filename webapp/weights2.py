@@ -10,7 +10,7 @@ import datetime
 def run_app():
 
     # CSV de Flows
-    df_flows = pd.read_csv('SDR/sdr1/data/FLOWS.csv', header=9)
+    df_flows = pd.read_csv('data/FLOWS.csv', header=9)
 
     # Me quedo solo con EFF y SBA
     df_flows = df_flows[(df_flows['Description'] == 'Extended Fund Facility') | (df_flows['Description'] == 'Stand-By Arrangement')]
@@ -27,7 +27,7 @@ def run_app():
     df_flows = df_flows[(df_flows['Original Arrangement Date'].dt.date >= dia1)]
 
     # CSV de GDP
-    df_gdp = pd.read_csv('SDR/sdr1/data/GDPreal.csv', header=6, na_values='...')
+    df_gdp = pd.read_csv('data/GDPreal.csv', header=6, na_values='...')
     df_gdp = df_gdp.drop('Unnamed: 0', axis=1)
     df_gdp = pd.melt(df_gdp, id_vars = ['Country'], value_vars=df_gdp.columns[3:], var_name='Time', value_name='Real GDP')
     df_gdp['Real GDP'] = df_gdp['Real GDP'].str.replace(',','').apply(pd.to_numeric)
@@ -36,7 +36,7 @@ def run_app():
     df_gdp['Time'] = df_gdp['Time'].dt.date
 
     # CSV de Nominal Exchange Rate
-    df_daily = pd.read_csv('SDR/sdr1/data/NEER_d.csv', header=0)
+    df_daily = pd.read_csv('data/NEER_d.csv', header=0)
 
     df_daily.drop(['FREQ','Frequency','COLLECTION','Collection','UNIT_MULT',
                 'Unit Multiplier','DECIMALS', 'Decimals', 'Availability',
