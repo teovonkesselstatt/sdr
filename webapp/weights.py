@@ -106,6 +106,11 @@ def run_app():
     for currency in display_currencies:
         weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
+    # Normalizo los weights
+    total = sum(weights.values(), 0.0)
+    if total > 0:
+        weights = {k: v / total for total in (sum(weights.values()),) for k, v in weights.items()}
+
     cantidad = {currency: 0 for currency in wide_df.columns}
 
     for currency in weights:
