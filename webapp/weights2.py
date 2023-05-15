@@ -77,7 +77,7 @@ def run_app():
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
 
     # Limito a un solo plan
-    option = st.sidebar.selectbox(
+    country = st.sidebar.selectbox(
         'Select a country',
         df_flows['Member'].unique())
 
