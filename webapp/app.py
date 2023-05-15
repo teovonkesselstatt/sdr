@@ -8,8 +8,8 @@ def run_app():
             "References": references
         }
 
-    st.sidebar.title('Navigation')
-    selection = st.sidebar.radio("Go to", list(PAGES.keys()))
-    page = PAGES[selection]
-
-    page.run_app()
+    #st.sidebar.title('Navigation')
+    #selection = st.sidebar.radio("Go to", list(PAGES.keys()))
+    #page = PAGES[selection]
+    #page.run_app()
+    weights.run_app()
