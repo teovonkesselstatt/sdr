@@ -97,7 +97,7 @@ def run_app():
         weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
     for currency in wide_df.columns:
-        cantidad[currency] = weights[currency] * wide_df[(wide_df.index == nro_plan)][currency]
+        cantidad[currency] = weights[currency] * wide_df[(wide_df.index == nro_plan)][currency] / wide_df[(wide_df.index == nro_plan)]['Special drawing right']
 
 
     # Columna del valor del Emerging SDR
@@ -106,7 +106,7 @@ def run_app():
         sum = 0
         for curr in weights:
             if not np.isnan(row[curr]): sum = sum + cantidad[curr]/row[curr]
-        return sum
+        return 1/sum
 
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
 
