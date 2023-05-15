@@ -9,49 +9,6 @@ import datetime
 
 def run_app():
 
-    ###################### CSV de Nominal Exchange Rate #######################
-
-    df_daily = pd.read_csv('data/NEER_d.csv', header=0)
-
-    df_daily.drop(['FREQ','Frequency','COLLECTION','Collection','UNIT_MULT',
-                'Unit Multiplier','DECIMALS', 'Decimals', 'Availability',
-                'AVAILABILITY', 'TITLE', 'Series'], axis=1, inplace=True)
-
-    df_daily = pd.melt(df_daily, id_vars = ['Reference area','REF_AREA','CURRENCY','Currency'], value_vars=df_daily.columns[18000:], var_name='Time', value_name='XR')
-    df_daily['Time'] = pd.to_datetime(df_daily['Time'], format='%Y-%m-%d')
-
-    # Creo el wide dataframe con las monedas
-    wide_df = df_daily.pivot_table(index='Time', columns='Currency', values='XR')
-
-    # Me quedo con las monedas que me interesan
-    wide_df = wide_df[['Brazilian real', 'Chilean peso','Euro','Hong Kong dollar',
-                    'Indian rupee','Mexican peso','Pound (sterling)','Renminbi',
-                    'Rupiah','Russian rouble','Saudi riyal','Singapore dollar',
-                    'South African Rand','Special drawing right',
-                        'Turkish lira','US dollar','Yen']]
-
-    # Elimino las primeras dos filas, que tienen algunos NAs
-    wide_df = wide_df.iloc[2:]
-    wide_df = wide_df.interpolate()
-
-    ############################ WEIGHTS ######################################
-
-    weights = {currency: 0 for currency in wide_df.columns}
-
-    for currency in wide_df.columns:
-        weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
-
-
-    # Columna del valor del Emerging SDR
-
-    def calculate_emerging(row):
-        sum = 0
-        for curr in weights:
-            if not np.isnan(row[curr]): sum = sum + row[curr]*weights[curr]
-        return sum
-
-    wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
-
     ######################### CSV de Flows ####################################
     df_flows = pd.read_csv('data/FLOWS.csv', header=9)
 
@@ -79,9 +36,32 @@ def run_app():
     df_gdp['Time'] = pd.PeriodIndex(df_gdp['Time'], freq='Q').to_timestamp(how = 'end')
     df_gdp['Time'] = df_gdp['Time'].dt.date
 
+    ###################### CSV de Nominal Exchange Rate #######################
 
+    df_daily = pd.read_csv('data/NEER_d.csv', header=0)
 
+    df_daily.drop(['FREQ','Frequency','COLLECTION','Collection','UNIT_MULT',
+                'Unit Multiplier','DECIMALS', 'Decimals', 'Availability',
+                'AVAILABILITY', 'TITLE', 'Series'], axis=1, inplace=True)
 
+    df_daily = pd.melt(df_daily, id_vars = ['Reference area','REF_AREA','CURRENCY','Currency'], value_vars=df_daily.columns[18000:], var_name='Time', value_name='XR')
+    df_daily['Time'] = pd.to_datetime(df_daily['Time'], format='%Y-%m-%d')
+
+    # Creo el wide dataframe con las monedas
+    wide_df = df_daily.pivot_table(index='Time', columns='Currency', values='XR')
+
+    # Me quedo con las monedas que me interesan
+    wide_df = wide_df[['Brazilian real', 'Chilean peso','Euro','Hong Kong dollar',
+                    'Indian rupee','Mexican peso','Pound (sterling)','Renminbi',
+                    'Rupiah','Russian rouble','Saudi riyal','Singapore dollar',
+                    'South African Rand','Special drawing right',
+                        'Turkish lira','US dollar','Yen']]
+
+    # Elimino las primeras dos filas, que tienen algunos NAs
+    wide_df = wide_df.iloc[2:]
+    wide_df = wide_df.interpolate()
+
+###############################################################################
 
     # Limito a un solo plan
     country = st.selectbox(
@@ -108,6 +88,29 @@ def run_app():
 
     plan.loc[:,'Debt'] = plan.Amount.cumsum()
 
+    ######################## WEIGHTS ##########################################
+
+    weights = {currency: 0 for currency in wide_df.columns}
+    cantidad = {currency: 0 for currency in wide_df.columns}
+
+    for currency in wide_df.columns:
+        weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+
+    for currency in wide_df.columns:
+        cantidad[currency] = weights[currency] * wide_df[(wide_df.index == nro_plan)][currency]
+
+
+    # Columna del valor del Emerging SDR
+
+    def calculate_emerging(row):
+        sum = 0
+        for curr in weights:
+            if not np.isnan(row[curr]): sum = sum + row[curr]*weights[curr]
+        return sum
+
+    wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
+
+
     # Column of value in USD for SDR and Emerging SDR
 
     def calculate_amount_currency(row,currency):
@@ -133,8 +136,8 @@ def run_app():
             currency].sum()
         return amount
 
-    df_gdp_country['IMF Payment SDR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount SDR', axis=1)
-    df_gdp_country['IMF Payment EMR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount EMR', axis=1)
+    df_gdp_country.loc[:,'IMF Payment SDR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount SDR', axis=1)
+    df_gdp_country.loc[:,'IMF Payment EMR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount EMR', axis=1)
 
     # Guardo el valor que SDR y EMR tenian cuando se acordo el plan
     sdr = wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
