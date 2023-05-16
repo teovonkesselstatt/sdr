@@ -61,40 +61,9 @@ def run_app():
     wide_df = wide_df.iloc[2:]
     wide_df = wide_df.interpolate()
 
-###############################################################################
-
-    a, b = df_flows.Member.unique(), df_gdp.Country.unique()
-    intersection = [x for x in a if x in b]
-    intersection.sort()
-
-    # Limito a un solo plan
-    country = st.selectbox(
-        'Select a country',
-        intersection)
-
-
-    # Veo caso de un país
-    df_country = df_flows[(df_flows['Member'] == country)].sort_values('Transaction Value Date')
-
-    # Lista de planes del país
-    planes_country = df_country['Original Arrangement Date'].unique()
-
-    nro_plan = st.selectbox(
-        'Select a plan',
-        planes_country)
-
-
-    # Me limito solo al plan elegido
-    plan = df_country[(df_country['Original Arrangement Date'] == nro_plan)]
-
-    # Lo pongo en terminos de deuda (postivo es que le debo al FMI)
-    plan.loc[plan['Flow Type'] == 'GRA Repurchases', 'Amount'] = -1 * plan['Amount']
-
-    plan.loc[:,'Debt'] = plan.Amount.cumsum()
-
     ######################## WEIGHTS ##########################################
 
-    ano = st.slider('##### Select initial year', min_value=2000, max_value=2020, value=2000, step=5)
+    ano = st.slider('##### Select initial year for wights', min_value=2000, max_value=2020, value=2000, step=1)
     ano = datetime.datetime(ano,1,1)
 
     weights = {currency: 0 for currency in wide_df.columns}
@@ -127,53 +96,93 @@ def run_app():
 
     wide_df['Emerging SDR'] = wide_df.apply(calculate_emerging, axis=1)
 
-    # Column of value in USD for SDR and Emerging SDR
 
-    def calculate_amount_currency(row,currency):
-        end_date = row['Transaction Value Date']
-        price_at_date = wide_df[((wide_df.index == end_date))][currency].values[0]
-        amount = row['Amount'] * (-1)
-        amount = amount / price_at_date
-        return amount
+    ###############################################################################
+    tab1, tab2 = st.tabs(["Graph for one plan", "Correlations"])
+
+    with tab1:
+        a, b = df_flows.Member.unique(), df_gdp.Country.unique()
+        intersection = [x for x in a if x in b]
+        intersection.sort()
+
+        # Limito a un solo plan
+        country = st.selectbox(
+            'Select a country',
+            intersection)
 
 
-    plan.loc[:,'Amount SDR'] = plan.apply(calculate_amount_currency, currency='Special drawing right', axis=1)
-    plan.loc[:,'Amount EMR'] = plan.apply(calculate_amount_currency, currency='Emerging SDR', axis=1)
+        # Veo caso de un país
+        df_country = df_flows[(df_flows['Member'] == country)].sort_values('Transaction Value Date')
 
-    # Me limito a un solo pais, un solo plan
-    df_gdp_country = df_gdp[df_gdp['Country'] == country]
+        # Lista de planes del país
+        planes_country = df_country['Original Arrangement Date'].unique()
 
-    # Calcula la suma de pagos de capital en cada trimestre
-    def calculate_imf_sdr(row, currency):
-        date = row['Time']
-        amount = plan.loc[(plan['Transaction Value Date'].dt.date <= date ) &
-            (plan['Transaction Value Date'].dt.date > date - pd.DateOffset(months = 3)) &
-            (plan['Flow Type'] == 'GRA Repurchases'),
-            currency].sum()
-        return amount
+        nro_plan = st.selectbox(
+            'Select a plan',
+            planes_country)
 
-    df_gdp_country.loc[:,'IMF Payment SDR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount SDR', axis=1)
-    df_gdp_country.loc[:,'IMF Payment EMR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount EMR', axis=1)
 
-    # Guardo el valor que SDR y EMR tenian cuando se acordo el plan
-    #sdr = wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
-    #emr = wide_df[(wide_df.index == nro_plan)]['Emerging SDR'][0]
+        # Me limito solo al plan elegido
+        plan = df_country[(df_country['Original Arrangement Date'] == nro_plan)]
 
-    # Ajusto los valores de los pagos como para que el monto en dolares arranque siendo igual
-    #df_gdp_country['IMF Payment EMR'] = df_gdp_country['IMF Payment EMR'] / sdr * emr
+        # Lo pongo en terminos de deuda (postivo es que le debo al FMI)
+        plan.loc[plan['Flow Type'] == 'GRA Repurchases', 'Amount'] = -1 * plan['Amount']
 
-    # Grafico
-    fig1, ax1 = plt.subplots(figsize=(12, 4))
+        plan.loc[:,'Debt'] = plan.Amount.cumsum()
 
-    df_gdp_country.plot(x = "Time", \
-            y = ["IMF Payment SDR","IMF Payment EMR"], \
-                style=['-','-'], \
-                    color=['r','b'],\
-                        ax = ax1)
 
-    df_gdp_country.plot('Time','Real GDP',secondary_y=True, ax=ax1)
+        # Column of value in USD for SDR and Emerging SDR
 
-    st.pyplot(fig1)
+        def calculate_amount_currency(row,currency):
+            end_date = row['Transaction Value Date']
+            price_at_date = wide_df[((wide_df.index == end_date))][currency].values[0]
+            amount = row['Amount'] * (-1)
+            amount = amount / price_at_date
+            return amount
 
-    st.write('Correlation with EMR' , df_gdp_country[["Real GDP","IMF Payment EMR"]].corr()['Real GDP'][1])
-    st.write('Correlation with SDR' , df_gdp_country[["Real GDP","IMF Payment SDR"]].corr()['Real GDP'][1])
+
+        plan.loc[:,'Amount SDR'] = plan.apply(calculate_amount_currency, currency='Special drawing right', axis=1)
+        plan.loc[:,'Amount EMR'] = plan.apply(calculate_amount_currency, currency='Emerging SDR', axis=1)
+
+        # Me limito a un solo pais, un solo plan
+        df_gdp_country = df_gdp[df_gdp['Country'] == country]
+
+        # Calcula la suma de pagos de capital en cada trimestre
+        def calculate_imf_sdr(row, currency):
+            date = row['Time']
+            amount = plan.loc[(plan['Transaction Value Date'].dt.date <= date ) &
+                (plan['Transaction Value Date'].dt.date > date - pd.DateOffset(months = 3)) &
+                (plan['Flow Type'] == 'GRA Repurchases'),
+                currency].sum()
+            return amount
+
+        df_gdp_country.loc[:,'IMF Payment SDR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount SDR', axis=1)
+        df_gdp_country.loc[:,'IMF Payment EMR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount EMR', axis=1)
+
+        # Guardo el valor que SDR y EMR tenian cuando se acordo el plan
+        #sdr = wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
+        #emr = wide_df[(wide_df.index == nro_plan)]['Emerging SDR'][0]
+
+        # Ajusto los valores de los pagos como para que el monto en dolares arranque siendo igual
+        #df_gdp_country['IMF Payment EMR'] = df_gdp_country['IMF Payment EMR'] / sdr * emr
+
+        # Grafico
+        fig1, ax1 = plt.subplots(figsize=(12, 4))
+
+        df_gdp_country.plot(x = "Time", \
+                y = ["IMF Payment SDR","IMF Payment EMR"], \
+                    style=['-','-'], \
+                        color=['r','b'],\
+                            ax = ax1)
+
+        df_gdp_country.plot('Time','Real GDP',secondary_y=True, ax=ax1)
+
+        st.pyplot(fig1)
+
+        st.write('Correlation with EMR' , df_gdp_country[["Real GDP","IMF Payment EMR"]].corr()['Real GDP'][1])
+        st.write('Correlation with SDR' , df_gdp_country[["Real GDP","IMF Payment SDR"]].corr()['Real GDP'][1])
+
+    with tab2:
+        st.header("A dog")
+        st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
+
