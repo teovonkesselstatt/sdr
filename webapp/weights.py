@@ -73,7 +73,7 @@ def run_app():
                 'Special drawing right','Turkish lira']
 
     for currency in display_currencies:
-        weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+        weights[currency] = st.sidebar.slider('##### ' + currency, min_value=0, max_value=5, value=1, step=1)
 
     # Normalizo los weights
     total = sum(weights.values(), 0.0)
@@ -98,6 +98,7 @@ def run_app():
 
 
     ###############################################################################
+
     tab1, tab2 = st.tabs(["Graph for one plan", "Correlations"])
 
     with tab1:
@@ -128,7 +129,7 @@ def run_app():
         # Lo pongo en terminos de deuda (postivo es que le debo al FMI)
         plan.loc[plan['Flow Type'] == 'GRA Repurchases', 'Amount'] = -1 * plan['Amount']
 
-        plan.loc[:,'Debt'] = plan.Amount.cumsum()
+        # plan.loc[:,'Debt'] = plan.Amount.cumsum()
 
 
         # Column of value in USD for SDR and Emerging SDR
@@ -158,13 +159,6 @@ def run_app():
 
         df_gdp_country.loc[:,'IMF Payment SDR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount SDR', axis=1)
         df_gdp_country.loc[:,'IMF Payment EMR'] = df_gdp_country.apply(calculate_imf_sdr, currency='Amount EMR', axis=1)
-
-        # Guardo el valor que SDR y EMR tenian cuando se acordo el plan
-        #sdr = wide_df[(wide_df.index == nro_plan)]['Special drawing right'][0]
-        #emr = wide_df[(wide_df.index == nro_plan)]['Emerging SDR'][0]
-
-        # Ajusto los valores de los pagos como para que el monto en dolares arranque siendo igual
-        #df_gdp_country['IMF Payment EMR'] = df_gdp_country['IMF Payment EMR'] / sdr * emr
 
         # Grafico
         fig1, ax1 = plt.subplots(figsize=(12, 4))
